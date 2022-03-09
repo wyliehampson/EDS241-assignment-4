@@ -19,8 +19,8 @@ knitr::opts_chunk$set(fig.width = 4, fig.height = 3,
 
 
 # load packages
-packages=c("stargazer", "here", "tidyr", "dplyr","stringr", "janitor", "here", 
-           "cowplot", "ggplot2", "tinytex", "datasets", "tibble")
+packages=c("stargazer", "here", "tidyr", "dplyr","stringr", "janitor", "here", "RDocumentation", "car",
+           "cowplot", "ggplot2", "tinytex", "datasets", "tibble", "estimatr", "AER")
 
 for (i in packages) {
   if (require(i,character.only=TRUE)==FALSE) {
@@ -56,41 +56,80 @@ of sardines sold in kg). In the questions below, I use log() to denote the natur
 **Read in the data:**
 
 ```{r}
-sardines <- read.csv(here("data", "EU_sardines.csv"))
+sardines <- read.csv(here("data", "EU_sardines.csv")) %>% 
+  mutate(log_price_euro_kg = log(price_euro_kg), log_volume_sold_kg = log(volume_sold_kg))
 ```
 
 \noindent
 **Question a: Estimate a bivariate regression of log(volume_sold_kg) on log(price_euro_kg). What is the price elasticity of demand for sardines? Test the null hypothesis that the price elasticity is equal to -1.**
 
 ```{r}
-model_a <- lm(formula = log(price_euro_kg) ~ log(volume_sold_kg), data = sardines)
+model_a <- lm_robust(data = sardines, log_volume_sold_kg ~ log_price_euro_kg)
 
 model_a_table <- broom::tidy(model_a) %>% 
-  dplyr::select(term, estimate, std.error, p.value) %>%
+  dplyr::select(term, estimate, std.error, p.value,) %>%
   knitr::kable()
 
-broom::tidy(model_a)
+model_a_table
+
+linearHypothesis(model_a, c("log_price_euro_kg = -1"), white.adjust = "hc2")
 ```
+
+\noindent
+*The price elasticty of sardines is `r round(model_a$coefficients[2], 2)`. Because our linear hypothesis gives us a very low p-value under 0.001, we can reject the null hypthesis that the price eleasticity is equal to -1.*
 
 \noindent
 **Question b: Like in Lecture 8 (see the IV.R script), we will use wind_m_s as an instrument for log(price_euro_kg). To begin, estimate the first-stage regression relating log(price_euro_kg) to wind_m_s. Interpret the estimated coefficient on wind speed. Does it have the expected sign? Also test for the relevance of the instrument and whether it is a “weak” instrument by reporting the proper F-statistic. **
 
 ```{r}
+model_b <- lm_robust(data = sardines, formula = log_price_euro_kg ~ wind_m_s)
 
+model_b_table <- broom::tidy(model_b) %>% 
+  dplyr::select(term, estimate, std.error, p.value) %>%
+  knitr::kable()
+
+model_b_table
+
+summary(model_b)
 ```
+
+\noindent
+*The estimated coefficient for wind speed on log(price/kg) is `r round(model_b$coefficients[2], 2)`, meaning that for every 1 m/s increase of wind speed, the log(price/kg) will increase by an estimated `r round(model_b$coefficients[2], 2)` euros. This is the sign that we would expect to see because higher windspeed would make fishing more difficult, which would raise the price of fish. The F-statistic for wind speed is `r model_b$fstatistic[1]`, so it is a relevant and non-weak instrument.*
 
 \noindent
 **Question c: Estimate the TSLS estimator of the price elasticity of demand for sardines using wind_m_s as an instrument for log(price_euro_kg). What is the estimated price elasticity of demand for sardines?**
 
 ```{r}
+tsls <- ivreg(log_volume_sold_kg ~ log_price_euro_kg | wind_m_s, data = sardines)
+summary(tsls)
 
+tsls_table <- broom::tidy(tsls) %>% 
+  dplyr::select(term, estimate, std.error, p.value) %>%
+  knitr::kable()
+
+tsls_table
 ```
+
+\noindent
+*The 2 stage least square estimator for price elasticity of demarnd for sardines, using wind speed as an instrument for log(price_euro_kg), is `r tsls$coefficients[2]`. *
 
 \noindent
 **Question d:  Repeat the exercise in (c), but include fixed effects for each year, month, and country. [Hint: you can use the command “as.factor(country) + as.factor(year) +as.factor(month)” to the ivreg function in R]. Report the estimated price elasticity of demand and the F-statistic testing for relevant and non-weak instruments.**
 
 ```{r}
+tsls_d <- ivreg(log_volume_sold_kg ~ log_price_euro_kg | wind_m_s +
+                as.factor(country) +
+                as.factor(year) +
+                as.factor(month),
+                data = sardines)
 
+summary(tsls_d)
+
+tsls_d_table <- broom::tidy(tsls_d) %>% 
+  dplyr::select(term, estimate, std.error, p.value) %>%
+  knitr::kable()
+
+tsls_d_table
 ```
 
 
