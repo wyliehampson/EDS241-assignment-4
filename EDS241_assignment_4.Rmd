@@ -94,7 +94,7 @@ summary(model_b)
 ```
 
 \noindent
-*The estimated coefficient for wind speed on log(price/kg) is `r round(model_b$coefficients[2], 2)`, meaning that for every 1 m/s increase of wind speed, the log(price/kg) will increase by an estimated `r round(model_b$coefficients[2], 2)` euros. This is the sign that we would expect to see because higher windspeed would make fishing more difficult, which would raise the price of fish. The F-statistic for wind speed is `r model_b$fstatistic[1]`, so it is a relevant and non-weak instrument.*
+*The estimated coefficient for wind speed on log(price/kg) is `r round(model_b$coefficients[2], 2)`, meaning that for every 1 percent increase of wind speed, the log(price/kg) in euros will increase by an estimated `r round(model_b$coefficients[2], 2)` percentage points. This is the sign that we would expect to see because higher windspeed would make fishing more difficult, which would raise the price of fish. The F-statistic for wind speed is `r model_b$fstatistic[1]`, so it is a relevant and non-weak instrument.*
 
 \noindent
 **Question c: Estimate the TSLS estimator of the price elasticity of demand for sardines using wind_m_s as an instrument for log(price_euro_kg). What is the estimated price elasticity of demand for sardines?**
