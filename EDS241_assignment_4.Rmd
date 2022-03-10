@@ -117,7 +117,10 @@ tsls_table
 **Question d:  Repeat the exercise in (c), but include fixed effects for each year, month, and country. [Hint: you can use the command “as.factor(country) + as.factor(year) +as.factor(month)” to the ivreg function in R]. Report the estimated price elasticity of demand and the F-statistic testing for relevant and non-weak instruments.**
 
 ```{r}
-tsls_d <- ivreg(log_volume_sold_kg ~ log_price_euro_kg | wind_m_s +
+tsls_d <- ivreg(log_volume_sold_kg ~ log_price_euro_kg +
+                as.factor(country) +
+                as.factor(year) +
+                as.factor(month) | wind_m_s +
                 as.factor(country) +
                 as.factor(year) +
                 as.factor(month),
@@ -130,7 +133,20 @@ tsls_d_table <- broom::tidy(tsls_d) %>%
   knitr::kable()
 
 tsls_d_table
+
+# To find the F-statistic
+model_d <- lm_robust(log_price_euro_kg ~ wind_m_s +
+                       as.factor(country) +
+                       as.factor(year) +
+                       as.factor(month), 
+                     data = sardines)
+
+model_d_test <- linearHypothesis(model_d, "wind_m_s = 0", white.adjust = "hc2")
+
+model_d_test
+
 ```
 
-
+\noindent
+*Using fixed effects for each year, country, and month, the estimated price elasticity of demand is `r round(tsls_d$coefficient[2], 2)`. The F-statistic is `r round(model_d_test$Chisq[2], 2)`, meaning these are not a weak instruments.*
 
